@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 #include <lua.h>
 #include <lauxlib.h>
@@ -8,6 +9,20 @@
 
 #include "losc.h"
 #include "losc_config.h"
+
+extern char *program_invocation_name;
+
+static bool config_error(const char *fmt, ...)
+{
+  va_list ap;
+
+  va_start(ap, fmt);
+  fprintf(stderr, "%s: Error while reading configuration: ", program_invocation_name);
+  vfprintf(stderr, fmt, ap);
+  fprintf(stderr, ".\n");
+  va_end(ap);
+  exit(1);
+}
 
 static char *config_path()
 {
@@ -23,6 +38,30 @@ static char *config_path()
       return cpath;
     }
   return NULL;
+}  
+
+static inline bool config_getlua_boolean(lua_State *L, char *n)
+{
+  lua_getglobal(L, n);
+  if (!lua_isboolean(L, -1))
+    config_error("%s is a required boolean", n);
+  return lua_toboolean(L, -1);
+}
+
+static inline int config_getlua_number(lua_State *L, char *n)
+{
+  lua_getglobal(L, n);
+  if (!lua_isnumber(L, -1))
+    config_error("%s is a required integer", n);
+  return lua_tonumber(L, -1);
+}
+
+static inline char *config_getlua_string(lua_State *L, char *n)
+{
+  lua_getglobal(L, n);
+  if (!lua_isstring(L, -1))
+    config_error("%s is a required string", n);
+  return (char *)lua_tostring(L, -1);
 }
 
 static struct losc_config *read_config(char *cpath)
@@ -33,14 +72,17 @@ static struct losc_config *read_config(char *cpath)
   L = luaL_newstate();
   luaL_openlibs(L);
   if (luaL_loadfile(L, cpath) || lua_pcall(L, 0, 0, 0))
-    LOSC_CONFIG_ERROR(lua_tostring(L, -1));
+    config_error(lua_tostring(L, -1));
 
-  lua_getglobal(L, "var");
-  if (!lua_isnumber(L, -1))
-    LOSC_CONFIG_ERROR("var must be set and a number");
-  config->var = lua_tonumber(L, -1);
+  config->b = config_getlua_boolean(L, "b");
+  config->var = config_getlua_number(L, "var");
+  config->str = config_getlua_string(L, "str");
 
   lua_close(L);
+
+  printf("%s\n", config->b ? "true" : "false");
+  printf("%i\n", config->var);
+  printf("%s\n", config->str);
   return config;
 }
 

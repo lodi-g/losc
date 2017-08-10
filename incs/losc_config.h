@@ -5,12 +5,15 @@
 # include <error.h>
 
 # define DOTCONFIG ".config"
+
 # define LOSC_CONFIG_ERROR(...) \
   error(1, 0, "Error while reading configuration:\n\t%s.", __VA_ARGS__)
 
 struct losc_config
 {
+  bool b;
   int var;
+  char *str;
 };
 
 struct losc_config *load_config();
