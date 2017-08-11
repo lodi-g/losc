@@ -34,7 +34,7 @@ static char *config_path()
     return cpath;
   if ((cpath = getenv("HOME")))
     {
-      asprintf(&cpath, "%s/%s/%s", getenv("HOME"), DOTCONFIG, LOSC_DIRNAME);
+      asprintf(&cpath, "%s/%s/%s", getenv("HOME"), LOSC_DOTCONFIG, LOSC_DIRNAME);
       return cpath;
     }
   return NULL;
@@ -86,7 +86,7 @@ static struct losc_config *read_config(char *cpath)
   return config;
 }
 
-struct losc_config *load_config()
+struct losc_config *losc_load_config()
 {
   struct losc_config *config;
   char *cpath;
