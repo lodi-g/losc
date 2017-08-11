@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdarg.h>
 
 #include <lua.h>
@@ -61,7 +62,7 @@ static inline char *config_getlua_string(lua_State *L, char *n)
   lua_getglobal(L, n);
   if (!lua_isstring(L, -1))
     config_error("%s is a required string", n);
-  return (char *)lua_tostring(L, -1);
+  return strdup((char *)lua_tostring(L, -1));
 }
 
 static struct losc_config *read_config(char *cpath)
@@ -86,17 +87,16 @@ static struct losc_config *read_config(char *cpath)
   return config;
 }
 
-struct losc_config *losc_load_config()
+struct losc_config *losc_load_config(char *cp)
 {
   struct losc_config *config;
   char *cpath;
   char *cfp;
 
-  if ((cpath = config_path()) == NULL)
+  if (!(cpath = cp ? cp : config_path()))
     return NULL;
   asprintf(&cfp, "%s/%s", cpath, "config");
-  free(cpath);
   config = read_config(cfp);
-  free(cfp);
+  xfree(cpath, cfp);
   return config;
 }

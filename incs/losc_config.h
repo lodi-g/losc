@@ -15,6 +15,6 @@ struct losc_config
   char *str;
 };
 
-struct losc_config *losc_load_config();
+struct losc_config *losc_load_config(char *cp);
 
 #endif
