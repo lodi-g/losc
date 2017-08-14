@@ -4,17 +4,17 @@
 
 # include <error.h>
 
+# define LOSC_CONFIG_FILENAME "config"
 # define LOSC_DOTCONFIG ".config"
 # define LOSC_CONFIG_ERROR(...) \
   error(1, 0, "Error while reading configuration:\n\t%s.", __VA_ARGS__)
 
 struct losc_config
 {
-  bool b;
-  int var;
-  char *str;
+  char *locker;
+  char **atrs;
 };
 
-struct losc_config *losc_load_config(char *cp);
+bool losc_load_config(char *cp, struct losc_config *config);
 
 #endif
