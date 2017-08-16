@@ -3,6 +3,7 @@ SRCSDIR :=	srcs
 INCSDIR :=	incs /usr/include/PCSC
 OBJSDIR :=	objs
 OUTDIR :=	.
+DESTDIR :=	/bin
 
 CC :=		gcc
 CFLAGS :=	-W -Wall -Wextra -Wvla -std=c11 -pedantic -g3
@@ -23,7 +24,7 @@ OBJS :=		$(patsubst $(SRCSDIR)/%.c,$(OBJSDIR)/%.o,$(SRCS))
 LOSC :=		loscd
 LOSC :=		$(addprefix $(OUTDIR)/,$(LOSC))
 
-all:		$(LOSC)
+all:		$(LOSC) service
 
 $(LOSC):	$(OBJSDIR) $(OBJS)
 		$(CC) -o $@ $(filter-out $<,$^) $(LDFLAGS)
@@ -36,23 +37,50 @@ $(OBJSDIR):;	@mkdir $@
 re:		clean
 		@$(MAKE)
 
+## service configuration
+define EOL
+
+
+endef
+
+GROUP :=	$(shell id -gn)
+
+SERVICE_F :=	loscd.service
+SERVICE_T :=	$(SERVICE_F).mk
+SERVICE_C :=	$(eval define SERVICE_C$(EOL)$(file <$(SERVICE_T))$(EOL)endef)$(SERVICE_C)
+
+service:	$(SERVICE_T) $(SERVICE_F)
+$(SERVICE_F):;	$(file >$@,$(SERVICE_C))
+
 ## installation
-LOSCD_S :=	./loscd.service
-S_DIR :=	/etc/systemd/system
-DIST :=		/bin/
-install:	$(LOSCD_S)
-		@mkdir -p $$HOME/.config/losc/
-		@sudo cp $(LOSC) $(DIST)
-		@sudo cp $(LOSCD_S) $(S_DIR)
-		@sudo systemctl daemon-reload
-		@printf "losc daemon successfully installed\n"
+SYSD_DIR :=	/etc/systemd/system
+INSTALL :=	@install
+
+ifeq (,$(filter 0,\
+	$(shell test -f $(LOSC); printf $$?),\
+	$(shell test -f $(SERVICE_F); printf $$?)))
+FILES_EXISTS :=	RunMakeAsNormalUser
+endif
+
+install:	$(FILES_EXISTS) install-losc install-srvce
+		@systemctl daemon-reload
+		@printf "Please create the configuration file (see README.md)\n"
+		@printf "Run sudo systemctl enable loscd --now to enable the service\n"
+
+install-losc:;	$(INSTALL) -m755 $(LOSC) $(DESTDIR)/
+install-srvce:;	$(INSTALL) -Dm644 $(SERVICE_F) $(SYSD_DIR)/
 
 ## clean
 RM :=		@rm -vfr
 
-clean:;		$(RM) $(OBJSDIR) $(LOSC)
+clean:;		$(RM) $(OBJSDIR) $(LOSC) $(SERVICE_F)
 mostlyclean:;	$(RM) $(OBJSDIR)
+
+## uninstall
+uninstall:	$(IS_ROOT)
+		$(RM) $(SYSD_DIR)/$(SERVICE_F)
+		$(RM) $(DESTDIR)/$(LOSC)
 
 ## misc
 MAKE +=		--no-print-directory
-.PHONY:		all clean mostlyclean re
+.PHONY:		all clean mostlyclean re service install install-losc install-service uninstall
