@@ -77,9 +77,7 @@ clean:;		$(RM) $(OBJSDIR) $(LOSC) $(SERVICE_F)
 mostlyclean:;	$(RM) $(OBJSDIR)
 
 ## uninstall
-uninstall:	$(IS_ROOT)
-		$(RM) $(SYSD_DIR)/$(SERVICE_F)
-		$(RM) $(DESTDIR)/$(LOSC)
+uninstall:;	$(RM) $(SYSD_DIR)/$(SERVICE_F) $(DESTDIR)/$(LOSC)
 
 ## misc
 MAKE +=		--no-print-directory
